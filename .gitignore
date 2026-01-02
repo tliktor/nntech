@@ -1,0 +1,30 @@
+# Build artifacts
+*.zip
+node_modules/
+dist/
+build/
+
+# AWS
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate*
+response.json
+test-response.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local

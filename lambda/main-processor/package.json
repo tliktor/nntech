@@ -1,0 +1,8 @@
+{
+  "name": "nntech-invoice-matcher-main",
+  "version": "1.0.0",
+  "dependencies": {
+    "aws-sdk": "^2.1691.0",
+    "axios": "^1.6.0"
+  }
+}
