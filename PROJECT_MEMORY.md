@@ -42,10 +42,11 @@ aws dynamodb scan --table-name nntech-invoice-matcher-data --profile nntech-deve
 ```
 
 ## 📋 Next Steps
-- [ ] Update WooCommerce URL in Lambda
-- [ ] Verify SES email: szamlazas@nanotech.co.hu
-- [ ] Request Bedrock Claude access
-- [ ] Test real API endpoints
+- [x] Update WooCommerce URL in Lambda
+- [x] Verify SES email: szamlazas@nanotech.co.hu
+- [x] Request Bedrock Claude access
+- [x] Test real API endpoints
+- [x] Deploy EU-GDPR compliant Claude 4.5 Sonnet
 
 ## 📚 References
 - **Full Docs**: `/docs/NANOTECH-INVOICE-MATCHER.md`

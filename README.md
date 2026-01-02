@@ -13,7 +13,7 @@ Automated serverless invoice matching system built on AWS.
 - DynamoDB
 - S3
 - SES
-- Bedrock (Claude 3 Haiku)
+- Bedrock (EU-hosted Claude 4.5 Sonnet - GDPR compliant)
 - EventBridge
 - Secrets Manager
 
@@ -35,7 +35,7 @@ All Lambda functions now use:
 ## 🏗️ Architecture
 
 ```
-EventBridge (cron) → Lambda (Node.js 22) → Bedrock (AI) → S3 (Excel) → SES (email)
+EventBridge (cron) → Lambda (Node.js 22) → Bedrock (EU Claude 4.5) → S3 (Excel) → SES (email)
                            ↓
                     DynamoDB (data/cache)
                            ↑
@@ -103,7 +103,7 @@ If upgrading from a previous version:
 ## 🎯 Features
 
 - ✅ Automated monthly invoice matching
-- ✅ AI-powered transaction analysis (Bedrock Claude)
+- ✅ AI-powered transaction analysis (EU-hosted Claude 4.5 Sonnet - GDPR compliant)
 - ✅ Excel report generation
 - ✅ Email notifications
 - ✅ Admin web interface

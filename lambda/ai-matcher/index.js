@@ -1,32 +1,38 @@
-const AWS = require('aws-sdk');
+import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 
-const bedrock = new AWS.BedrockRuntime({
-    region: 'eu-west-1'
+const bedrock = new BedrockRuntimeClient({
+    region: 'eu-west-1' // EU region for GDPR compliance
 });
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
     const { transaction, availableInvoices } = event;
     
     try {
         const prompt = buildPrompt(transaction, availableInvoices);
         
-        const response = await bedrock.invokeModel({
-            modelId: 'anthropic.claude-3-haiku-20240307-v1:0',
+        const command = new InvokeModelCommand({
+            modelId: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0',
             contentType: 'application/json',
             accept: 'application/json',
             body: JSON.stringify({
                 anthropic_version: "bedrock-2023-05-31",
-                max_tokens: 1000,
                 messages: [
                     {
                         role: "user",
-                        content: prompt
+                        content: [{
+                            type: "text",
+                            text: prompt
+                        }]
                     }
-                ]
+                ],
+                max_tokens: 1000,
+                temperature: 0.1
             })
-        }).promise();
+        });
         
-        const result = JSON.parse(response.body.toString());
+        const response = await bedrock.send(command);
+        
+        const result = JSON.parse(new TextDecoder().decode(response.body));
         const aiResponse = JSON.parse(result.content[0].text);
         
         return {

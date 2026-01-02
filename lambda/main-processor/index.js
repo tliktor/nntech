@@ -1,16 +1,28 @@
-const AWS = require('aws-sdk');
-const axios = require('axios');
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import axios from 'axios';
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
-const s3 = new AWS.S3();
-const ses = new AWS.SES();
-const secretsManager = new AWS.SecretsManager();
+const dynamoClient = new DynamoDBClient({ region: 'eu-west-1' });
+const dynamodb = DynamoDBDocumentClient.from(dynamoClient);
+const s3Client = new S3Client({ region: 'eu-west-1' });
+const sesClient = new SESClient({ region: 'eu-west-1' });
+const secretsClient = new SecretsManagerClient({ region: 'eu-west-1' });
 
-exports.handler = async (event) => {
-    console.log('Starting invoice matching process');
+export const handler = async (event) => {
+    console.log('Starting invoice matching process', JSON.stringify(event));
     
     try {
         const secrets = await getSecrets();
+        
+        // Check if this is a file upload trigger
+        if (event.source === 'file-upload' && event.uploadedFiles) {
+            return await processUploadedFiles(event.uploadedFiles, secrets);
+        }
+        
+        // Regular monthly processing
         const dateRange = getPreviousMonthRange();
         
         console.log(`Processing data for ${dateRange.year}-${dateRange.month}`);
@@ -47,11 +59,80 @@ exports.handler = async (event) => {
     }
 };
 
-async function getSecrets() {
-    const result = await secretsManager.getSecretValue({
-        SecretId: process.env.SECRETS_ARN
-    }).promise();
+async function processUploadedFiles(uploadedFiles, secrets) {
+    console.log('Processing uploaded files:', uploadedFiles);
     
+    const transactions = [];
+    const dateRange = getPreviousMonthRange();
+    
+    // Process each uploaded file
+    for (const [fileType, s3Key] of Object.entries(uploadedFiles)) {
+        try {
+            const fileData = await getFileFromS3(s3Key);
+            const parsedData = await parseFileData(fileType, fileData);
+            transactions.push(...parsedData.map(t => ({ ...t, bank: fileType })));
+        } catch (error) {
+            console.error(`Error processing ${fileType} file:`, error);
+        }
+    }
+    
+    // Fetch invoices from API
+    const invoices = await fetchSzamlazzInvoices(secrets, dateRange);
+    
+    // Store and match
+    await storeRawData(invoices, transactions, [], dateRange);
+    const matchingResults = await performMatching(invoices, transactions);
+    
+    console.log('File processing completed:', matchingResults.summary);
+    
+    return {
+        statusCode: 200,
+        body: JSON.stringify({
+            message: 'File processing completed successfully',
+            summary: matchingResults.summary
+        })
+    };
+}
+
+async function getFileFromS3(s3Key) {
+    const command = new GetObjectCommand({
+        Bucket: process.env.S3_BUCKET,
+        Key: s3Key
+    });
+    
+    const response = await s3Client.send(command);
+    return await response.Body.transformToString();
+}
+
+async function parseFileData(fileType, fileData) {
+    // Simple CSV parsing - in production, use a proper CSV parser
+    const lines = fileData.split('\n').filter(line => line.trim());
+    const transactions = [];
+    
+    // Skip header row
+    for (let i = 1; i < lines.length; i++) {
+        const columns = lines[i].split(',');
+        
+        if (columns.length >= 3) {
+            transactions.push({
+                id: `${fileType}_${i}`,
+                date: columns[0]?.trim(),
+                amount: parseFloat(columns[1]?.trim()) || 0,
+                description: columns[2]?.trim() || '',
+                currency: 'HUF'
+            });
+        }
+    }
+    
+    return transactions;
+}
+
+async function getSecrets() {
+    const command = new GetSecretValueCommand({
+        SecretId: process.env.SECRETS_ARN
+    });
+    
+    const result = await secretsClient.send(command);
     return JSON.parse(result.SecretString);
 }
 
@@ -222,11 +303,12 @@ async function storeRawData(invoices, transactions, orders, dateRange) {
     if (items.length > 0) {
         const chunks = chunkArray(items, 25);
         for (const chunk of chunks) {
-            await dynamodb.batchWrite({
+            const command = new BatchWriteCommand({
                 RequestItems: {
                     [process.env.DYNAMODB_TABLE]: chunk
                 }
-            }).promise();
+            });
+            await dynamodb.send(command);
         }
     }
 }
@@ -288,14 +370,14 @@ function extractInvoiceNumber(text) {
 
 async function sendErrorNotification(error) {
     try {
-        await ses.sendEmail({
+        const command = new SendEmailCommand({
             Destination: {
                 ToAddresses: ['szamlazas@nanotech.co.hu']
             },
             Message: {
                 Body: {
                     Text: {
-                        Data: `Error in invoice matching: ${error.message}\\n\\nStack: ${error.stack}`
+                        Data: `Error in invoice matching: ${error.message}\n\nStack: ${error.stack}`
                     }
                 },
                 Subject: {
@@ -303,7 +385,9 @@ async function sendErrorNotification(error) {
                 }
             },
             Source: 'szamlazas@nanotech.co.hu'
-        }).promise();
+        });
+        
+        await sesClient.send(command);
     } catch (emailError) {
         console.error('Failed to send error notification:', emailError);
     }

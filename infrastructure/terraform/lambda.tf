@@ -31,11 +31,18 @@ resource "aws_iam_role_policy" "lambda_policy" {
           "dynamodb:*",
           "s3:*",
           "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream",
           "ses:SendEmail",
           "lambda:InvokeFunction",
           "secretsmanager:GetSecretValue"
         ]
-        Resource = "*"
+        Resource = [
+          "*",
+          "arn:aws:bedrock:eu-west-1:*:inference-profile/eu.anthropic.claude-*",
+          "arn:aws:bedrock:eu-central-1::foundation-model/anthropic.claude-*",
+          "arn:aws:bedrock:eu-west-1::foundation-model/anthropic.claude-*",
+          "arn:aws:bedrock:eu-north-1::foundation-model/anthropic.claude-*"
+        ]
       }
     ]
   })
