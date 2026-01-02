@@ -47,6 +47,7 @@ aws dynamodb scan --table-name nntech-invoice-matcher-data --profile nntech-deve
 - [x] Request Bedrock Claude access
 - [x] Test real API endpoints
 - [x] Deploy EU-GDPR compliant Claude 4.5 Sonnet
+- [x] Create WooCommerce plugin and update API credentials
 
 ## 📚 References
 - **Full Docs**: `/docs/NANOTECH-INVOICE-MATCHER.md`

@@ -28,6 +28,8 @@ resource "aws_iam_role_policy" "lambda_policy" {
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
           "dynamodb:*",
           "s3:*",
           "bedrock:InvokeModel",
@@ -46,6 +48,39 @@ resource "aws_iam_role_policy" "lambda_policy" {
       }
     ]
   })
+}
+
+resource "aws_cloudwatch_log_group" "lambda_logs" {
+  for_each = {
+    main-processor = aws_lambda_function.main_processor.function_name
+    ai-matcher = aws_lambda_function.ai_matcher.function_name
+    file-processor = aws_lambda_function.file_processor.function_name
+    api-tester = aws_lambda_function.api_tester.function_name
+  }
+  
+  name              = "/aws/lambda/${each.value}"
+  retention_in_days = 14
+}
+
+resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
+  for_each = {
+    main-processor = aws_lambda_function.main_processor.function_name
+    ai-matcher = aws_lambda_function.ai_matcher.function_name
+  }
+  
+  alarm_name          = "${each.value}-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "Errors"
+  namespace           = "AWS/Lambda"
+  period              = "300"
+  statistic           = "Sum"
+  threshold           = "1"
+  alarm_description   = "Lambda function ${each.value} error rate"
+  
+  dimensions = {
+    FunctionName = each.value
+  }
 }
 
 resource "aws_lambda_function" "main_processor" {
