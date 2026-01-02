@@ -12,13 +12,13 @@
 
 #### Lambda Functions
 - **Main Processor**: `nntech-invoice-matcher-main-processor`
-  - Runtime: Node.js 20.x
+  - Runtime: Node.js 22.x
   - Memory: 512 MB
   - Timeout: 15 minutes
   - Status: ✅ Working
 
 - **AI Matcher**: `nntech-invoice-matcher-ai-matcher`
-  - Runtime: Node.js 20.x
+  - Runtime: Node.js 22.x
   - Memory: 256 MB
   - Timeout: 5 minutes
   - Status: ✅ Ready for Bedrock

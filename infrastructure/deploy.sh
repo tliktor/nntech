@@ -13,19 +13,13 @@ fi
 # Build Lambda functions
 echo "📦 Building Lambda functions..."
 
-cd lambda/main-processor
-npm install --production
-zip -r ../../main-processor.zip . -x "*.git*" "node_modules/.cache/*"
-cd ../..
-
-cd lambda/ai-matcher
-npm install --production
-zip -r ../../ai-matcher.zip . -x "*.git*" "node_modules/.cache/*"
+# Build API tester
+cd lambda/api-tester
+zip -r ../../api-tester.zip . -x "*.git*" "docs/*" "*.md" "test-*" "PROJECT_*"
 cd ../..
 
 # Move zip files to terraform directory
-mv main-processor.zip infrastructure/terraform/
-mv ai-matcher.zip infrastructure/terraform/
+mv api-tester.zip infrastructure/terraform/
 
 # Deploy infrastructure
 echo "🏗️ Deploying infrastructure..."
@@ -45,6 +39,6 @@ echo "📁 Reports bucket: $REPORTS_BUCKET"
 echo "💰 Estimated monthly cost: ~$0.10"
 
 # Cleanup
-rm -f main-processor.zip ai-matcher.zip
+rm -f api-tester.zip
 
 cd ../..

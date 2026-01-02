@@ -46,7 +46,7 @@ resource "aws_lambda_function" "main_processor" {
   function_name    = "${var.project_name}-main-processor"
   role            = aws_iam_role.lambda_role.arn
   handler         = "index.handler"
-  runtime         = "nodejs20.x"
+  runtime         = "nodejs22.x"
   timeout         = 900
   memory_size     = 512
 
@@ -67,7 +67,7 @@ resource "aws_lambda_function" "ai_matcher" {
   function_name    = "${var.project_name}-ai-matcher"
   role            = aws_iam_role.lambda_role.arn
   handler         = "index.handler"
-  runtime         = "nodejs20.x"
+  runtime         = "nodejs22.x"
   timeout         = 300
   memory_size     = 256
 

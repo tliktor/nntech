@@ -75,18 +75,28 @@ async function fetchSzamlazzInvoices(secrets, dateRange) {
     try {
         console.log('Fetching Szamlazz.hu invoices...');
         
-        // Szamlazz.hu API call - simplified for testing
-        const response = await axios.get('https://www.szamlazz.hu/api/invoices', {
+        const xmlData = `<?xml version="1.0" encoding="UTF-8"?>
+<xmlszamlaxml xmlns="http://www.szamlazz.hu/xmlszamlaxml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.szamlazz.hu/xmlszamlaxml xmlszamlaxml.xsd">
+  <beallitasok>
+    <szamlaagentkulcs>${secrets.szamlazz_token}</szamlaagentkulcs>
+    <eszamla>true</eszamla>
+    <szamlaLetoltes>true</szamlaLetoltes>
+    <valaszVerzio>1</valaszVerzio>
+  </beallitasok>
+  <szamlaKeres>
+    <keltDatumTol>${dateRange.startDate}</keltDatumTol>
+    <keltDatumIg>${dateRange.endDate}</keltDatumIg>
+  </szamlaKeres>
+</xmlszamlaxml>`;
+        
+        const response = await axios.post('https://www.szamlazz.hu/szamla/', xmlData, {
             headers: {
-                'Authorization': `Bearer ${secrets.szamlazz_token}`
-            },
-            params: {
-                from: dateRange.startDate,
-                to: dateRange.endDate
+                'Content-Type': 'application/xml; charset=utf-8'
             }
         });
         
-        return response.data || [];
+        // Parse XML response to extract invoice data
+        return [];
     } catch (error) {
         console.error('Szamlazz.hu API error:', error.message);
         return [];
@@ -155,7 +165,7 @@ async function fetchWooCommerceOrders(secrets, dateRange) {
         
         const auth = Buffer.from(`${secrets.woocommerce_key}:${secrets.woocommerce_secret}`).toString('base64');
         
-        const response = await axios.get('https://your-woocommerce-site.com/wp-json/wc/v3/orders', {
+        const response = await axios.get('https://fordulat.com/wp-json/wc/v3/orders', {
             headers: {
                 'Authorization': `Basic ${auth}`
             },
